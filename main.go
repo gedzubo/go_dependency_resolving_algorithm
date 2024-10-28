@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type Node struct {
 	name  string
@@ -11,11 +14,33 @@ func (n *Node) addEdge(e *Node) {
 	n.edges = append(n.edges, e)
 }
 
-func resolveDependancies(n *Node) {
-	fmt.Println(n.name)
-	for _, edge := range n.edges {
-		resolveDependancies(edge)
+func removeNodeFromList(list []*Node, element *Node) []*Node {
+	var newList []*Node
+
+	for _, e := range list {
+		if e.name != element.name {
+			newList = append(newList, e)
+		}
 	}
+
+	return newList
+}
+
+func resolveDependancies(node *Node, resolved []*Node, unresolved []*Node) ([]*Node, []*Node) {
+	unresolved = append(unresolved, node)
+	for _, edge := range node.edges {
+		if !slices.Contains(resolved, edge) {
+			if slices.Contains(unresolved, edge) {
+				fmt.Printf("Circular dependancy detected: %s -> %s ", node.name, edge.name)
+			} else {
+				resolved, unresolved = resolveDependancies(edge, resolved, unresolved)
+			}
+		}
+	}
+	resolved = append(resolved, node)
+	unresolved = removeNodeFromList(unresolved, node)
+
+	return resolved, unresolved
 }
 
 func main() {
@@ -32,5 +57,13 @@ func main() {
 	c.addEdge(&d)
 	c.addEdge(&e)
 
-	resolveDependancies(&a)
+	// Circular dependancy
+	d.addEdge(&b)
+
+	var resolved, unresolved []*Node
+	result, _ := resolveDependancies(&a, resolved, unresolved)
+
+	for _, node := range result {
+		fmt.Println(node.name)
+	}
 }
