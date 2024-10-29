@@ -26,21 +26,21 @@ func removeNodeFromList(list []*Node, element *Node) []*Node {
 	return newList
 }
 
-func resolveDependancies(node *Node, resolved []*Node, unresolved []*Node) ([]*Node, []*Node) {
+func resolveDependancies(node *Node, resolved []*Node, unresolved []*Node) ([]*Node, []*Node, error) {
 	unresolved = append(unresolved, node)
 	for _, edge := range node.edges {
 		if !slices.Contains(resolved, edge) {
 			if slices.Contains(unresolved, edge) {
-				fmt.Printf("Circular dependancy detected: %s -> %s ", node.name, edge.name)
+				return resolved, unresolved, fmt.Errorf("circular dependancy detected: %s -> %s ", node.name, edge.name)
 			} else {
-				resolved, unresolved = resolveDependancies(edge, resolved, unresolved)
+				resolved, unresolved, _ = resolveDependancies(edge, resolved, unresolved)
 			}
 		}
 	}
 	resolved = append(resolved, node)
 	unresolved = removeNodeFromList(unresolved, node)
 
-	return resolved, unresolved
+	return resolved, unresolved, nil
 }
 
 func main() {
@@ -58,12 +58,16 @@ func main() {
 	c.addEdge(&e)
 
 	// Circular dependancy
-	d.addEdge(&b)
+	// d.addEdge(&b)
 
 	var resolved, unresolved []*Node
-	result, _ := resolveDependancies(&a, resolved, unresolved)
+	result, _, err := resolveDependancies(&a, resolved, unresolved)
 
-	for _, node := range result {
-		fmt.Println(node.name)
+	if err != nil {
+		fmt.Print(err)
+	} else {
+		for _, node := range result {
+			fmt.Println(node.name)
+		}
 	}
 }
